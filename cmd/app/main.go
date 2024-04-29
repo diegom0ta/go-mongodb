@@ -11,9 +11,9 @@ import (
 	"github.com/diegom0ta/go-mongodb/internal/http/server"
 )
 
-var ctx context.Context
-
 func main() {
+	ctx := context.Background()
+
 	db.Connect(ctx)
 
 	go func() {
@@ -28,9 +28,9 @@ func main() {
 
 	log.Println("Graceful shutdown started...")
 
-	server.Shutdown()
-
 	db.Disconnect(ctx)
+
+	server.Shutdown()
 
 	log.Println("Server is down")
 }

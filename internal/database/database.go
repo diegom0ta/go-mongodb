@@ -4,20 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/diegom0ta/go-mongodb/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	client     *mongo.Client
-	dbHost     = os.Getenv("DB_HOST")
-	dbPort     = os.Getenv("DB_PORT")
-	dbUsername = os.Getenv("DB_USERNAME")
-	dbPassword = os.Getenv("DB_PASSWORD")
-)
+var Client *mongo.Client
 
 // Connect to MongoDB
 func Connect(ctx context.Context) {
@@ -28,12 +21,12 @@ func Connect(ctx context.Context) {
 
 	uri := fmt.Sprintf("mongodb://%v:%v@%v:%v/auth_microservice_db?authSource=admin", config.DB.Username, config.DB.Password, config.DB.Host, config.DB.Port)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	Client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = client.Ping(ctx, nil)
+	err = Client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatal("Failed to ping MongoDB:", err)
 	}
@@ -44,7 +37,7 @@ func Connect(ctx context.Context) {
 
 // Disconnect from database
 func Disconnect(ctx context.Context) {
-	err := client.Disconnect(ctx)
+	err := Client.Disconnect(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
