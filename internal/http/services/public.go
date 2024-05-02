@@ -9,6 +9,7 @@ import (
 
 	db "github.com/diegom0ta/go-mongodb/internal/database"
 	"github.com/diegom0ta/go-mongodb/internal/models"
+	"github.com/diegom0ta/go-mongodb/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,6 +25,11 @@ type User struct {
 	Phone                string `json:"phone"`
 	Password             string `json:"password"`
 	PasswordConfirmation string `json:"password_confirmation"`
+}
+
+type UserLogin struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func Register(c *fiber.Ctx) error {
@@ -98,4 +104,38 @@ func validatePasswd(password, passwdConfirmation string) (string, error) {
 	}
 
 	return hashedPasswd, nil
+}
+
+func Login(c *fiber.Ctx) error {
+	login := new(UserLogin)
+
+	if err := c.BodyParser(&login); err != nil {
+		return fmt.Errorf("error: %v", err)
+	}
+
+	database := db.Client.Database("mydatabase")
+	collection := database.Collection("users")
+
+	var user models.User
+
+	err := collection.FindOne(context.Background(), bson.M{"email": login.Email}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Printf("User with email '%v' not found", login.Email)
+		} else {
+			return fmt.Errorf("failed to search user with email '%v': %v", login.Email, err)
+		}
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PwdHash), []byte(login.Password)); err != nil {
+		return c.SendStatus(fiber.ErrBadRequest.Code)
+	}
+
+	token, err := utils.GenerateToken(user.Email)
+	if err != nil {
+
+		return c.SendStatus(fiber.ErrInternalServerError.Code)
+	}
+
+	return c.JSON(token)
 }

@@ -16,7 +16,7 @@ func publicRoutes(app *fiber.App) fiber.Router {
 	})
 	route.Get("/routes", func(c *fiber.Ctx) error { return c.JSON(app.Stack()) })
 	route.Post("/register", srv.Register)
-	// route.Post("/login/protected", srv.Login)
+	route.Post("/login/protected", srv.Login)
 
 	return route
 }

@@ -13,6 +13,9 @@ type Config struct {
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 	} `yaml:"db"`
+	Secret struct {
+		SecretKey string `yaml:"secretKey"`
+	} `yaml:"secret"`
 }
 
 // Parse YAML data into config struct
