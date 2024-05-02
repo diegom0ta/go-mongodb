@@ -2,14 +2,18 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	db "github.com/diegom0ta/go-mongodb/internal/database"
+	"github.com/diegom0ta/go-mongodb/internal/models"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,46 +35,43 @@ func Register(c *fiber.Ctx) error {
 		return fmt.Errorf("error: %v", err)
 	}
 
-	filter := `{"email": "` + newUser.Email + `"}`
-
-	var filterMap map[string]interface{}
-
-	err := json.Unmarshal([]byte(filter), &filterMap)
-	if err != nil {
-		return fmt.Errorf("error decoding JSON filter: %v", err)
-	}
-
 	database := db.Client.Database("mydatabase")
 	collection := database.Collection("users")
 
-	// Find one document that matches the filter
-	var user User
-	err = collection.FindOne(context.Background(), filterMap).Decode(&user)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			log.Printf("user with email '%s' does not exist", newUser.Email)
-		} else {
-			log.Printf("error checking user existence: %v", err)
-		}
+	var user models.User
+
+	index := mongo.IndexModel{
+		Keys:    bson.D{{Key: "email", Value: 1}},
+		Options: options.Index().SetUnique(true),
 	}
+
+	_, err := collection.Indexes().CreateOne(ctx, index)
+	if err != nil {
+		return fmt.Errorf("error creating unique index: %v", err)
+	}
+
+	uuid := uuid.New()
 
 	pwdHash, err := validatePasswd(newUser.Password, newUser.PasswordConfirmation)
 	if err != nil {
-		log.Printf("password not valid: %v", err)
+		return fmt.Errorf("password not valid: %v", err)
 	}
 
-	_, err = collection.InsertOne(ctx, map[string]interface{}{
-		"name":         newUser.Name,
-		"document":     newUser.Document,
-		"email":        newUser.Email,
-		"phone":        newUser.Phone,
-		"passwordHash": pwdHash,
-	})
+	user.ID = uuid.String()
+	user.Name = newUser.Name
+	user.Document = newUser.Document
+	user.Email = newUser.Email
+	user.Phone = newUser.Phone
+	user.PwdHash = pwdHash
+	user.CreatedAt = time.Now().UTC()
+
+	_, err = collection.InsertOne(ctx, user)
 	if err != nil {
 		log.Printf("Failed to insert document: %v", err)
+		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	return c.SendStatus(200)
+	return c.SendStatus(fiber.StatusCreated)
 }
 
 func hashPasswd(password string) (string, error) {
