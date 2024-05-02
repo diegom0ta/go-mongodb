@@ -38,8 +38,6 @@ func Register(c *fiber.Ctx) error {
 	database := db.Client.Database("mydatabase")
 	collection := database.Collection("users")
 
-	var user models.User
-
 	index := mongo.IndexModel{
 		Keys:    bson.D{{Key: "email", Value: 1}},
 		Options: options.Index().SetUnique(true),
@@ -57,13 +55,15 @@ func Register(c *fiber.Ctx) error {
 		return fmt.Errorf("password not valid: %v", err)
 	}
 
-	user.ID = uuid.String()
-	user.Name = newUser.Name
-	user.Document = newUser.Document
-	user.Email = newUser.Email
-	user.Phone = newUser.Phone
-	user.PwdHash = pwdHash
-	user.CreatedAt = time.Now().UTC()
+	user := models.User{
+		ID:        uuid.String(),
+		Name:      newUser.Name,
+		Document:  newUser.Document,
+		Email:     newUser.Email,
+		Phone:     newUser.Phone,
+		PwdHash:   pwdHash,
+		CreatedAt: time.Now().UTC(),
+	}
 
 	_, err = collection.InsertOne(ctx, user)
 	if err != nil {
