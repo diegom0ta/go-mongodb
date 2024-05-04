@@ -19,17 +19,17 @@ type Config struct {
 }
 
 // Parse YAML data into config struct
-func ParseYaml() (Config, error) {
-	var config Config
+func ParseYaml() (*Config, error) {
+	config := new(Config)
 
 	data, err := ReadConfigFile()
 	if err != nil {
-		return config, fmt.Errorf("error reading YAML: %v", err)
+		return nil, fmt.Errorf("error reading YAML: %v", err)
 	}
 
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		return config, fmt.Errorf("error unmarshaling YAML: %v", err)
+		return nil, fmt.Errorf("error unmarshaling YAML: %v", err)
 	}
 
 	return config, nil
