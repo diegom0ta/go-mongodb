@@ -6,5 +6,5 @@ import (
 
 func StartRoutes(app *fiber.App) {
 	publicRoutes(app)
-	//protectedRoutes(app)
+	protectedRoutes(app)
 }
