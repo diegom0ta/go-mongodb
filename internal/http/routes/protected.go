@@ -10,7 +10,7 @@ func protectedRoutes(app *fiber.App) fiber.Router {
 	route := app.Group("/protected")
 
 	route.Use(middleware.JwtAuth())
-	route.Get("/users/:page", srv.GetUsers)
+	route.Get("/users", srv.GetUsers)
 
 	return route
 }
